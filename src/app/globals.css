@@ -133,3 +133,9 @@
     font-size: 85%;
   }
 }
+
+@media screen and (max-width: 766px) {
+  html {
+    font-size: 80%;
+  }
+}

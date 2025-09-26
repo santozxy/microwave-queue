@@ -77,7 +77,7 @@ export function MicrowaveQueue() {
         <div className="flex-1 flex gap-6 min-h-0 w-full">
           <div className="w-1/2 flex-shrink-0">
             <Card className="h-full flex flex-col bg-card border-border">
-              <CardHeader className="pb-4 flex-shrink-0">
+              <CardHeader className="pb-2 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-primary" />
@@ -157,7 +157,7 @@ export function MicrowaveQueue() {
 
           <div className="w-1/2 flex-shrink-0">
             <Card className="h-full border-primary/20 bg-primary/5 flex flex-col">
-              <CardHeader className="pb-4 flex-shrink-0">
+              <CardHeader className="pb-2 flex-shrink-0">
                 <CardTitle className="text-primary text-xl flex items-center gap-2">
                   🎯 Ordem da Fila
                 </CardTitle>
@@ -218,11 +218,7 @@ export function MicrowaveQueue() {
                       </div>
                     </div>
 
-                    <div className="mt-4 p-3 bg-primary/15 rounded-lg flex-shrink-0 border border-primary/30">
-                      <p className="text-sm text-primary text-center font-medium">
-                        🔥 <strong>{queueOrder[0]}</strong> é o próximo na fila!
-                      </p>
-                    </div>
+               
                   </>
                 ) : (
                   <div className="flex-1 flex items-center justify-center">
