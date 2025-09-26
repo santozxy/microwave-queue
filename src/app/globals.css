@@ -116,7 +116,20 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@media screen and (max-width: 1550px) {
+  html {
+    font-size: 90%;
+  }
+}
+
+@media screen and (max-width: 1000px) {
+  html {
+    font-size: 85%;
   }
 }
