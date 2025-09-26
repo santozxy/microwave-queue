@@ -18,11 +18,12 @@ const employees = [
   "É o Jeff",
   "Fabão",
   "Negão",
-  "Fabricio bezerro",
+  "Fabricio Bezerro",
   "Gaibriel",
   "Webson Siacalme",
   "Ramun",
   "Juno Severino",
+  "Auricélia",
 ];
 
 export function MicrowaveQueue() {
