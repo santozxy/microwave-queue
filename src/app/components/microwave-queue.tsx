@@ -14,7 +14,7 @@ import { Shuffle, Users, Clock, Check } from "lucide-react";
 
 const employees = [
   "Alberito",
-  "Tubarão",
+  "Mão de obra barata",
   "É o Jeff",
   "Fabão",
   "Negão",
