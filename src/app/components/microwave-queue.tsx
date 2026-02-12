@@ -26,7 +26,8 @@ const employees = [
   "Auricélia",
   "Jaelma",
   "Matheus",
-  "Alysson"
+  "Alysson",
+  "Sereio"
 ];
 
 export function MicrowaveQueue() {
