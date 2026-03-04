@@ -13,7 +13,7 @@ import {
 import { Shuffle, Users, Clock, Check } from "lucide-react";
 
 const employees = [
-  "Alberito",
+  "Catatau",
   "Mão de obra super barata",
   "É o Jeff",
   "Fabão",
