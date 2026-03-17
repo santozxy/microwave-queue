@@ -29,7 +29,7 @@ import {
 
 const employees = [
   "Catatau",
-  "Mão de obra super barata",
+  "Mão de obra quase barata",
   "É o Jeff",
   "Fabão",
   "Negão",
