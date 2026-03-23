@@ -34,7 +34,7 @@ const employees = [
   "Fabão",
   "Negão",
   "Pacote Office 365",
-  "O Testador",
+  "QA Cachaça",
   "Webson Siacalme",
   "Raman",
   "Juno Severino",
