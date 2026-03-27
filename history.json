@@ -1,0 +1,37 @@
+[
+  {
+    "id": "00916b1d-7807-4c21-9793-dcb0068bfd71",
+    "timestamp": "2026-03-27T20:00:52.476Z",
+    "module": "fila-almoco",
+    "action": "Participante adicionado",
+    "details": "Mão de obra quase barata"
+  },
+  {
+    "id": "911606b6-f9c8-4901-8f1c-2a22a97d13fe",
+    "timestamp": "2026-03-27T20:00:52.820Z",
+    "module": "fila-almoco",
+    "action": "Participante adicionado",
+    "details": "Catatau"
+  },
+  {
+    "id": "6ddaee3e-fff0-48ff-8ef4-c85c7b1a2ab1",
+    "timestamp": "2026-03-27T20:00:53.339Z",
+    "module": "fila-almoco",
+    "action": "Selecionou todos",
+    "details": "16 participante(s)"
+  },
+  {
+    "id": "767c1e6b-d927-410c-8678-c996ded336c2",
+    "timestamp": "2026-03-27T20:00:54.029Z",
+    "module": "fila-almoco",
+    "action": "Geracao de fila iniciada",
+    "details": "16 participante(s)"
+  },
+  {
+    "id": "d76e2af9-f338-42c2-8f43-d5f1e35cb04b",
+    "timestamp": "2026-03-27T20:00:54.809Z",
+    "module": "fila-almoco",
+    "action": "Fila gerada",
+    "details": "Fabão -> É o Jeff -> Fabinha -> Mão de obra quase barata -> Auricélia -> Alysson -> Raman -> Sereio -> QA Cachaça -> Juno Severino -> Catatau -> Negão -> Pacote Office 365 -> Webson Siacalme -> FormiguinhaZ -> Matheus Escobar"
+  }
+]

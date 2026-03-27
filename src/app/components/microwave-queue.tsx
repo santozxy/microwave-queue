@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,33 +17,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { logHistoryEvent } from "@/lib/history";
 import {
+  ArrowLeftRight,
+  Check,
+  Clock,
+  GripVertical,
   Shuffle,
   Users,
-  Clock,
-  Check,
-  GripVertical,
-  ArrowLeftRight,
 } from "lucide-react";
+import { useRef, useState } from "react";
 
-const employees = [
-  "Catatau",
-  "Mão de obra quase barata",
-  "É o Jeff",
-  "Fabão",
-  "Negão",
-  "Pacote Office 365",
-  "QA Cachaça",
-  "Webson Siacalme",
-  "Raman",
-  "Juno Severino",
-  "Auricélia",
-  "FormiguinhaZ",
-  "Matheus Escobar",
-  "Alysson",
-  "Sereio",
-  "Fabinha",
-];
+interface MicrowaveQueueProps {
+  employees: string[];
+}
 
 interface QueueItem {
   name: string;
@@ -56,7 +42,7 @@ interface SwapConfirm {
   toIndex: number;
 }
 
-export function MicrowaveQueue() {
+export function MicrowaveQueue({ employees }: MicrowaveQueueProps) {
   const [selectedPeople, setSelectedPeople] = useState<string[]>([]);
   const [queueOrder, setQueueOrder] = useState<QueueItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -66,31 +52,56 @@ export function MicrowaveQueue() {
   const dragIndexRef = useRef<number | null>(null);
 
   const handlePersonToggle = (person: string) => {
+    const isSelected = selectedPeople.includes(person);
     setSelectedPeople((prev) =>
       prev.includes(person)
         ? prev.filter((p) => p !== person)
         : [...prev, person],
     );
     setQueueOrder([]);
+    void logHistoryEvent({
+      module: "fila-almoco",
+      action: isSelected ? "Participante removido" : "Participante adicionado",
+      details: person,
+    });
   };
 
   const generateRandomOrder = async () => {
     if (selectedPeople.length === 0) return;
     setIsGenerating(true);
+    void logHistoryEvent({
+      module: "fila-almoco",
+      action: "Geracao de fila iniciada",
+      details: `${selectedPeople.length} participante(s)`,
+    });
     await new Promise((resolve) => setTimeout(resolve, 800));
     const shuffled = [...selectedPeople].sort(() => Math.random() - 0.5);
     setQueueOrder(shuffled.map((name) => ({ name, previousPosition: null })));
     setIsGenerating(false);
+    void logHistoryEvent({
+      module: "fila-almoco",
+      action: "Fila gerada",
+      details: shuffled.join(" -> "),
+    });
   };
 
   const selectAll = () => {
     setSelectedPeople(employees);
     setQueueOrder([]);
+    void logHistoryEvent({
+      module: "fila-almoco",
+      action: "Selecionou todos",
+      details: `${employees.length} participante(s)`,
+    });
   };
 
   const clearAll = () => {
     setSelectedPeople([]);
     setQueueOrder([]);
+    void logHistoryEvent({
+      module: "fila-almoco",
+      action: "Limpou selecao",
+    });
   };
 
   // Drag handlers
@@ -119,6 +130,11 @@ export function MicrowaveQueue() {
     setDraggingIndex(null);
     if (fromIndex === null || fromIndex === toIndex) return;
     setSwapConfirm({ fromIndex, toIndex });
+    void logHistoryEvent({
+      module: "fila-almoco",
+      action: "Solicitou troca de posicao",
+      details: `${fromIndex + 1} <-> ${toIndex + 1}`,
+    });
     dragIndexRef.current = null;
   };
 
@@ -142,10 +158,22 @@ export function MicrowaveQueue() {
       updated[toIndex] = fromItem;
       return updated;
     });
+    void logHistoryEvent({
+      module: "fila-almoco",
+      action: "Confirmou troca de posicao",
+      details: `${fromIndex + 1} <-> ${toIndex + 1}`,
+    });
     setSwapConfirm(null);
   };
 
   const cancelSwap = () => {
+    if (swapConfirm) {
+      void logHistoryEvent({
+        module: "fila-almoco",
+        action: "Cancelou troca de posicao",
+        details: `${swapConfirm.fromIndex + 1} <-> ${swapConfirm.toIndex + 1}`,
+      });
+    }
     setSwapConfirm(null);
     dragIndexRef.current = null;
   };
