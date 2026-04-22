@@ -38,7 +38,7 @@ const employees = [
   "Webson Siacalme",
   "Raman",
   "Juno Severino",
-  "Auricélia",
+  "Cláudia",
   "Feijão",
   "Matheus Escobar",
   "Alysson",
