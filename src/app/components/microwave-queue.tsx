@@ -48,7 +48,7 @@ interface SwapConfirm {
   toIndex: number;
 }
 
-function MicrowaveQueueModule() {
+export function MicrowaveQueueModule() {
   const [selectedPeople, setSelectedPeople] = useState<string[]>([]);
   const [queueOrder, setQueueOrder] = useState<QueueItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -410,48 +410,4 @@ function MicrowaveQueueModule() {
   );
 }
 
-export function MicrowaveQueue() {
-  return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <div className="text-center">
-          <h1 className="flex items-center justify-center gap-2 text-3xl font-bold text-foreground">
-            <Clock className="h-7 w-7 text-primary" />
-            Escalas do escritório
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            Organize a fila do micro-ondas e o rodízio diário do lixo no mesmo
-            lugar.
-          </p>
-        </div>
 
-        <Tabs defaultValue="microwave" className="gap-4">
-          <TabsList className="h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
-            <TabsTrigger
-              value="microwave"
-              className="h-10 border border-border bg-card px-4 data-[state=active]:border-primary data-[state=active]:text-primary"
-            >
-              <Clock className="h-4 w-4" />
-              Fila do micro-ondas
-            </TabsTrigger>
-            <TabsTrigger
-              value="trash"
-              className="h-10 border border-border bg-card px-4 data-[state=active]:border-primary data-[state=active]:text-primary"
-            >
-              <Trash2 className="h-4 w-4" />
-              Rodízio do lixo
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="microwave">
-            <MicrowaveQueueModule />
-          </TabsContent>
-
-          <TabsContent value="trash">
-            <TrashRotation />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
-  );
-}

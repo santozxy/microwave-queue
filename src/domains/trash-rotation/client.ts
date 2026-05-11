@@ -4,7 +4,15 @@ import {
 } from "./types";
 
 interface TrashRotationResponse {
+  assignment?: {
+    assignee: string;
+    date: string;
+  };
   message?: string;
+  removedAssignment?: {
+    assignee: string;
+    date: string;
+  };
   snapshot?: TrashWeekSnapshot;
 }
 
@@ -36,6 +44,7 @@ export async function fetchTrashWeekSnapshot(selectedDate: string) {
 export async function createTrashAssignmentRequest(
   selectedDate: string,
   participants: string[],
+  assignee?: string,
 ) {
   const response = await fetch("/api/trash-rotation", {
     method: "POST",
@@ -43,6 +52,7 @@ export async function createTrashAssignmentRequest(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      assignee,
       date: selectedDate,
       participants,
     }),
@@ -51,6 +61,19 @@ export async function createTrashAssignmentRequest(
 
   if (!response.ok) {
     throw new Error(data.message ?? "Não foi possível salvar o rodízio.");
+  }
+
+  return data;
+}
+
+export async function removeTrashAssignmentRequest(selectedDate: string) {
+  const response = await fetch(`/api/trash-rotation?date=${selectedDate}`, {
+    method: "DELETE",
+  });
+  const data = await readJsonResponse<TrashRotationResponse>(response);
+
+  if (!response.ok) {
+    throw new Error(data.message ?? "Não foi possível remover o rodízio.");
   }
 
   return data;

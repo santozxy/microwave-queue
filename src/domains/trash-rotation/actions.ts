@@ -1,11 +1,11 @@
 import "server-only";
 
 import {
-  buildTrashWeekSnapshot,
   readTrashRotationData,
   writeTrashRotationData,
 } from "./server";
 import {
+  createTrashWeekSnapshot,
   TrashRotationError,
   getWeekKey,
   normalizeParticipants,
@@ -16,6 +16,7 @@ import {
 export async function createTrashAssignment(
   selectedDate: string,
   participants: string[],
+  assignee?: string,
 ) {
   const data = await readTrashRotationData();
   const normalizedParticipants = normalizeParticipants(participants);
@@ -54,11 +55,20 @@ export async function createTrashAssignment(
     );
   }
 
-  const assignee =
+  const resolvedAssignee = assignee?.trim();
+
+  if (resolvedAssignee && !eligibleParticipants.includes(resolvedAssignee)) {
+    throw new TrashRotationError(
+      "A pessoa sorteada não está elegível para este dia.",
+    );
+  }
+
+  const finalAssignee =
+    resolvedAssignee ??
     eligibleParticipants[Math.floor(Math.random() * eligibleParticipants.length)];
 
   const newAssignment: TrashAssignment = {
-    assignee,
+    assignee: finalAssignee,
     createdAt: new Date().toISOString(),
     date: selectedDate,
     participants: normalizedParticipants,
@@ -75,6 +85,33 @@ export async function createTrashAssignment(
 
   return {
     assignment: newAssignment,
-    snapshot: buildTrashWeekSnapshot(selectedDate, nextData.assignments),
+    snapshot: createTrashWeekSnapshot(selectedDate, nextData.assignments),
+  };
+}
+
+export async function removeTrashAssignment(selectedDate: string) {
+  const data = await readTrashRotationData();
+  const existingAssignment = data.assignments.find(
+    (assignment) => assignment.date === selectedDate,
+  );
+
+  if (!existingAssignment) {
+    throw new TrashRotationError(
+      `Não existe responsável cadastrado para o dia ${selectedDate}.`,
+      404,
+    );
+  }
+
+  const nextData: TrashRotationData = {
+    assignments: data.assignments.filter(
+      (assignment) => assignment.date !== selectedDate,
+    ),
+  };
+
+  await writeTrashRotationData(nextData);
+
+  return {
+    removedAssignment: existingAssignment,
+    snapshot: createTrashWeekSnapshot(selectedDate, nextData.assignments),
   };
 }

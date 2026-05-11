@@ -19,12 +19,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   createTrashAssignmentRequest,
   fetchTrashWeekSnapshot,
   getTodayIsoDate,
+  removeTrashAssignmentRequest,
 } from "@/domains/trash-rotation/client";
-import { type TrashWeekSnapshot } from "@/domains/trash-rotation/types";
+import {
+  createTrashWeekSnapshot,
+  type TrashAssignment,
+  type TrashWeekSnapshot,
+} from "@/domains/trash-rotation/types";
 import { employees } from "@/lib/employees";
 
 function shiftIsoDateByDays(date: string, amount: number) {
@@ -79,6 +85,7 @@ export function TrashRotation() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -166,23 +173,56 @@ export function TrashRotation() {
     handleSelectDate(shiftIsoDateByDays(selectedDate, 7));
   };
 
+  const buildOptimisticSnapshot = (assignments: TrashAssignment[]) =>
+    createTrashWeekSnapshot(selectedDate, assignments);
+
   const handleGenerateAssignment = async () => {
-    if (selectedPeople.length === 0) {
+    if (selectedPeople.length === 0 || !weekSnapshot) {
       return;
     }
+
+    const eligibleParticipants = selectedPeople.filter(
+      (person) => !assignedParticipants.has(person),
+    );
+
+    if (eligibleParticipants.length === 0) {
+      return;
+    }
+
+    const optimisticAssignee =
+      eligibleParticipants[
+        Math.floor(Math.random() * eligibleParticipants.length)
+      ];
+    const previousSnapshot = weekSnapshot;
+    const previousSelection = selectedPeople;
+    const optimisticAssignment: TrashAssignment = {
+      assignee: optimisticAssignee,
+      createdAt: new Date().toISOString(),
+      date: selectedDate,
+      participants: selectedPeople,
+      weekKey: weekSnapshot.weekKey,
+    };
+    const optimisticSnapshot = buildOptimisticSnapshot([
+      ...weekSnapshot.assignments.filter(
+        (assignment) => assignment.date !== selectedDate,
+      ),
+      optimisticAssignment,
+    ]);
 
     setIsSaving(true);
     setErrorMessage(null);
     setFeedbackMessage(null);
+    setWeekSnapshot(optimisticSnapshot);
+    setSelectedPeople([]);
 
     try {
       const data = await createTrashAssignmentRequest(
         selectedDate,
         selectedPeople,
+        optimisticAssignee,
       );
 
       setFeedbackMessage(data.message ?? "Rodízio salvo com sucesso.");
-      setSelectedPeople([]);
 
       if (data.snapshot) {
         setWeekSnapshot(data.snapshot);
@@ -194,134 +234,73 @@ export function TrashRotation() {
         error instanceof Error
           ? error.message
           : "Não foi possível salvar o rodízio.";
+      setWeekSnapshot(previousSnapshot);
+      setSelectedPeople(previousSelection);
       setErrorMessage(message);
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleRemoveAssignment = async () => {
+    if (!currentAssignment || !weekSnapshot) {
+      return;
+    }
+
+    const previousSnapshot = weekSnapshot;
+    const optimisticSnapshot = buildOptimisticSnapshot(
+      weekSnapshot.assignments.filter(
+        (assignment) => assignment.date !== selectedDate,
+      ),
+    );
+
+    setIsRemoving(true);
+    setErrorMessage(null);
+    setFeedbackMessage(null);
+    setWeekSnapshot(optimisticSnapshot);
+
+    try {
+      const data = await removeTrashAssignmentRequest(selectedDate);
+      setFeedbackMessage(data.message ?? "Responsável removido com sucesso.");
+
+      if (data.snapshot) {
+        setWeekSnapshot(data.snapshot);
+      } else {
+        await loadWeek(selectedDate);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível remover o rodízio.";
+      setWeekSnapshot(previousSnapshot);
+      setErrorMessage(message);
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
-      <Card className="min-h-136 border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
-        <CardHeader className="gap-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div className="grid gap-6 xl:grid-cols-2">
+      <Card className="min-h-136 border-border bg-card">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2 text-xl">
+              <div className="flex items-center gap-2">
                 <Trash2 className="h-5 w-5 text-primary" />
-                Rodízio do lixo
-              </CardTitle>
+                <CardTitle className="text-xl">Participantes</CardTitle>
+              </div>
               <CardDescription>
-                Escolha uma data da semana, selecione quem pode participar e o
-                sistema sorteará um responsável para o dia selecionado.
+                {selectedPeople.length} de {availableCount} selecionados
               </CardDescription>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void loadWeek(selectedDate)}
-              disabled={isLoading}
-            >
-              <RefreshCcw className="mr-2 h-4 w-4" />
-              Atualizar
-            </Button>
-          </div>
-
-          <div className="rounded-2xl border border-primary/15 bg-background/70 p-4 shadow-inner shadow-black/10">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    Semana armazenada
-                  </p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {selectedWeekRange}
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-medium text-primary">
-                    {assignedCount} dia(s) preenchido(s)
-                  </span>
-                  <span className="rounded-full border border-border bg-muted/40 px-3 py-1 font-medium text-muted-foreground">
-                    {availableCount} participante(s) livre(s)
-                  </span>
-                  <span className="rounded-full border border-border bg-muted/30 px-3 py-1 font-medium text-muted-foreground">
-                    Selecione um dia abaixo
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 self-start">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={goToPreviousWeek}
-                  aria-label="Semana anterior"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={goToNextWeek}
-                  aria-label="Próxima semana"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="mt-4 overflow-x-auto pb-1">
-              <div className="flex min-w-max gap-3">
-                {(weekSnapshot?.weekDates ?? []).map((date) => {
-                  const assignment = weekSnapshot?.assignments.find(
-                    (item) => item.date === date,
-                  );
-                  const isSelectedDay = date === selectedDate;
-
-                  return (
-                    <button
-                      key={date}
-                      type="button"
-                      onClick={() => handleSelectDate(date)}
-                      className={[
-                        "group min-w-28 rounded-2xl border px-4 py-3 text-left transition-all",
-                        isSelectedDay
-                          ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                          : assignment
-                            ? "border-primary/20 bg-primary/8 hover:border-primary/40 hover:bg-primary/12"
-                            : "border-border bg-card/70 hover:border-primary/30 hover:bg-accent",
-                      ].join(" ")}
-                    >
-                      <p
-                        className={[
-                          "text-[11px] font-semibold uppercase tracking-[0.18em]",
-                          isSelectedDay
-                            ? "text-primary-foreground/80"
-                            : "text-muted-foreground group-hover:text-foreground",
-                        ].join(" ")}
-                      >
-                        {formatWeekday(date)}
-                      </p>
-                      <p className="mt-2 text-base font-semibold">
-                        {formatMonthDay(date)}
-                      </p>
-                      <p
-                        className={[
-                          "mt-2 text-xs",
-                          isSelectedDay
-                            ? "text-primary-foreground/80"
-                            : assignment
-                              ? "text-primary"
-                              : "text-muted-foreground",
-                        ].join(" ")}
-                      >
-                        {assignment ? assignment.assignee : "Disponível"}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={selectAllEligible}>
+                Todos
+              </Button>
+              <Button variant="outline" size="sm" onClick={clearSelection}>
+                Limpar
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -339,52 +318,6 @@ export function TrashRotation() {
             </div>
           )}
 
-          {currentAssignment && (
-            <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 shadow-sm">
-              <p className="text-sm font-medium text-primary">
-                Esta data já foi definida
-              </p>
-              <p className="mt-1 text-sm text-foreground">
-                <span className="font-semibold">
-                  {currentAssignment.assignee}
-                </span>{" "}
-                ficou responsável pelo lixo em{" "}
-                {formatWeekDateLabel(selectedDate)}.
-              </p>
-            </div>
-          )}
-
-          {!currentAssignment && (
-            <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-3">
-              <p className="text-sm font-medium text-foreground">
-                Dia selecionado: {formatWeekDateLabel(selectedDate)}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Escolha os participantes elegíveis e faça o sorteio deste dia.
-              </p>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">
-                Participantes elegíveis
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {selectedPeople.length} selecionado(s) de {availableCount}{" "}
-                disponível(eis)
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={selectAllEligible}>
-                Todos os elegíveis
-              </Button>
-              <Button variant="outline" size="sm" onClick={clearSelection}>
-                Limpar
-              </Button>
-            </div>
-          </div>
-
           <div className="grid gap-2 sm:grid-cols-2">
             {employees.map((person) => {
               const isAssigned = assignedParticipants.has(person);
@@ -397,12 +330,12 @@ export function TrashRotation() {
                   onClick={() => handlePersonToggle(person)}
                   disabled={isAssigned}
                   className={[
-                    "rounded-xl border p-3 text-left transition-all",
+                    "rounded-lg border-2 p-3 text-left transition-all",
                     isAssigned
                       ? "cursor-not-allowed border-border bg-muted/40 text-muted-foreground opacity-60"
                       : isSelected
-                        ? "border-primary bg-primary/10 text-primary shadow-md shadow-primary/10"
-                        : "border-border bg-card/80 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent text-card-foreground",
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-border bg-card hover:border-primary/50 hover:bg-accent text-card-foreground",
                   ].join(" ")}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -432,154 +365,212 @@ export function TrashRotation() {
           </div>
         </CardContent>
 
-        <CardFooter className="pt-2">
-          <Button
-            onClick={handleGenerateAssignment}
-            disabled={
-              isLoading ||
-              isSaving ||
-              currentAssignment !== undefined ||
-              selectedPeople.length === 0
-            }
-            size="lg"
-            className="w-full"
-          >
-            <UserRoundCheck
-              className={`mr-2 h-5 w-5 ${isSaving ? "animate-pulse" : ""}`}
-            />
-            {isSaving ? "Salvando rodízio..." : "Sortear responsável do dia"}
-          </Button>
+        <CardFooter>
+          <div className="w-full space-y-3">
+            <Button
+              onClick={handleGenerateAssignment}
+              disabled={
+                isLoading ||
+                isSaving ||
+                isRemoving ||
+                currentAssignment !== undefined ||
+                selectedPeople.length === 0
+              }
+              size="lg"
+              className="w-full"
+            >
+              <UserRoundCheck
+                className={`mr-2 h-5 w-5 ${isSaving ? "animate-spin" : ""}`}
+              />
+              {isSaving ? "Salvando rodízio..." : "Sortear responsável do dia"}
+            </Button>
+
+            {selectedPeople.length === 0 && !currentAssignment && (
+              <p className="text-center text-xs text-muted-foreground">
+                Selecione pelo menos uma pessoa para sortear o responsável
+              </p>
+            )}
+          </div>
         </CardFooter>
       </Card>
 
-      {/* <Card className="min-h-[34rem] border-primary/20 bg-primary/5 shadow-[0_24px_60px_rgba(0,0,0,0.18)]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-xl text-primary">
-            <CalendarDays className="h-5 w-5" />
-            Resumo da semana
-          </CardTitle>
-          <CardDescription>
-            O histórico salvo em JSON local mostra o status do dia selecionado e
-            quem já participou nesta semana.
-          </CardDescription>
+      <Card className="min-h-136 border-primary/20 bg-primary/5">
+        <CardHeader className="pb-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2 text-xl text-primary">
+                <Trash2 className="h-5 w-5" />
+                Dias e Responsável
+              </CardTitle>
+              <CardDescription>
+                {weekSnapshot
+                  ? `${assignedCount} dia(s) preenchido(s) • Semana ${selectedWeekRange}`
+                  : "Os dias aparecerão aqui após carregar a semana"}
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToPreviousWeek}
+                aria-label="Semana anterior"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={goToNextWeek}
+                aria-label="Próxima semana"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void loadWeek(selectedDate)}
+                disabled={isLoading}
+              >
+                <RefreshCcw className="mr-2 h-4 w-4" />
+                Atualizar
+              </Button>
+            </div>
+          </div>
         </CardHeader>
 
-        <CardContent>
-          {isLoading && !weekSnapshot ? (
-            <div className="flex min-h-[24rem] items-center justify-center text-sm text-muted-foreground">
-              Carregando semana...
-            </div>
-          ) : weekSnapshot ? (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-primary/20 bg-card/70 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary/80">
-                  Dia selecionado
-                </p>
-                <p className="mt-2 text-lg font-semibold text-foreground">
-                  {formatWeekDateLabel(selectedDate)}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {currentAssignment
-                    ? `${currentAssignment.assignee} já está responsável por este dia.`
-                    : "Ainda não existe um responsável definido para este dia."}
-                </p>
-              </div>
+        <CardContent className="space-y-4">
+          {weekSnapshot?.weekDates && weekSnapshot.weekDates.length > 0 ? (
+            <>
+              <ScrollArea className="w-full whitespace-nowrap pb-3">
+                <div className="flex min-w-max gap-3">
+                  {weekSnapshot.weekDates.map((date) => {
+                    const assignment = weekSnapshot.assignments.find(
+                      (item) => item.date === date,
+                    );
+                    const isSelectedDay = date === selectedDate;
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-border bg-card/70 p-4">
-                  <p className="text-sm font-medium text-foreground">
-                    Dias preenchidos
-                  </p>
-                  <p className="mt-1 text-2xl font-semibold text-primary">
-                    {assignedCount}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border bg-card/70 p-4">
-                  <p className="text-sm font-medium text-foreground">
-                    Pessoas já escaladas
-                  </p>
-                  <p className="mt-1 text-2xl font-semibold text-primary">
-                    {weekSnapshot.assignedParticipants.length}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-foreground">
-                  Histórico da semana
-                </p>
-                {weekSnapshot.weekDates.map((date) => {
-                  const assignment = weekSnapshot.assignments.find(
-                    (item) => item.date === date,
-                  );
-                  const isSelectedDay = date === selectedDate;
-
-                  return (
-                    <div
-                      key={date}
-                      className={[
-                        "rounded-xl border p-4 transition-all",
-                        isSelectedDay
-                          ? "border-primary bg-primary/12 shadow-sm"
-                          : "border-border bg-card/70",
-                      ].join(" ")}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">
-                            {formatWeekDateLabel(date)}
-                          </p>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {assignment
-                              ? assignment.assignee
-                              : "Nenhuma pessoa definida ainda"}
-                          </p>
-                        </div>
-                        <span
-                          className={[
-                            "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide",
-                            assignment
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground",
-                          ].join(" ")}
-                        >
-                          {assignment ? "Preenchido" : "Livre"}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-foreground">
-                  Já participaram nesta semana
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {weekSnapshot.assignedParticipants.length > 0 ? (
-                    weekSnapshot.assignedParticipants.map((person) => (
-                      <span
-                        key={person}
-                        className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
+                    return (
+                      <button
+                        key={date}
+                        type="button"
+                        onClick={() => handleSelectDate(date)}
+                        className={[
+                          "group min-h-28 w-32 shrink-0 rounded-2xl border p-3 text-left transition-all",
+                          isSelectedDay
+                            ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                            : assignment
+                              ? "border-primary/20 bg-primary/8 hover:border-primary/40 hover:bg-primary/12"
+                              : "border-border bg-card hover:border-primary/30 hover:bg-accent",
+                        ].join(" ")}
                       >
-                        {person}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      Ainda não há ninguém registrado nesta semana.
-                    </span>
-                  )}
+                        <div className="flex h-full min-w-0 flex-col justify-between">
+                          <div>
+                            <p
+                              className={[
+                                "text-[11px] font-semibold uppercase tracking-[0.18em]",
+                                isSelectedDay
+                                  ? "text-primary-foreground/80"
+                                  : "text-muted-foreground group-hover:text-foreground",
+                              ].join(" ")}
+                            >
+                              {formatWeekday(date)}
+                            </p>
+                            <p className="mt-2 text-lg font-semibold">
+                              {formatMonthDay(date)}
+                            </p>
+                          </div>
+                          <div className="mt-4 flex items-end justify-between gap-3">
+                            <p
+                              className={[
+                                "min-w-0 truncate text-xs",
+                                isSelectedDay
+                                  ? "text-primary-foreground/80"
+                                  : assignment
+                                    ? "text-primary"
+                                    : "text-muted-foreground",
+                              ].join(" ")}
+                            >
+                              {assignment ? assignment.assignee : "Disponível"}
+                            </p>
+                            {isSelectedDay && (
+                              <span className="shrink-0 rounded-full bg-primary-foreground/15 px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
+                                Dia
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+
+              {currentAssignment ? (
+                <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 shadow-sm">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-primary">
+                        Responsável do dia
+                      </p>
+                      <p className="mt-1 text-sm text-foreground">
+                        <span className="font-semibold">
+                          {currentAssignment.assignee}
+                        </span>{" "}
+                        ficou responsável pelo lixo em{" "}
+                        {formatWeekDateLabel(selectedDate)}.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemoveAssignment}
+                      disabled={isRemoving || isSaving}
+                      className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {isRemoving ? "Removendo..." : "Remover do dia"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex min-h-96 items-center justify-center">
+                  <div className="space-y-3 text-center">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                      <Trash2 className="h-8 w-8 text-primary/60" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-muted-foreground">
+                        Nenhum responsável definido ainda
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground/80">
+                        Selecione um dia e sorteie uma pessoa na coluna da
+                        esquerda
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="flex min-h-96 items-center justify-center">
+              <div className="space-y-3 text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                  <Trash2 className="h-8 w-8 text-primary/60" />
+                </div>
+                <div>
+                  <p className="font-medium text-muted-foreground">
+                    Carregando a semana
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground/80">
+                    Aguarde enquanto buscamos os dias e responsáveis
+                  </p>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex min-h-[24rem] items-center justify-center text-sm text-muted-foreground">
-              Não foi possível carregar os dados da semana.
             </div>
           )}
         </CardContent>
-      </Card> */}
+      </Card>
     </div>
   );
 }

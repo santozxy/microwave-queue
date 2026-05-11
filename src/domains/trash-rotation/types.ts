@@ -91,3 +91,29 @@ export function normalizeParticipants(participants: string[]) {
     new Set(participants.filter((participant) => employees.includes(participant))),
   );
 }
+
+export function createTrashWeekSnapshot(
+  selectedDate: string,
+  assignments: TrashAssignment[],
+): TrashWeekSnapshot {
+  const weekKey = getWeekKey(selectedDate);
+  const weekDates = getWeekDates(selectedDate);
+  const weekAssignments = assignments
+    .filter((assignment) => assignment.weekKey === weekKey)
+    .sort((left, right) => left.date.localeCompare(right.date));
+  const assignedParticipants = Array.from(
+    new Set(weekAssignments.map((assignment) => assignment.assignee)),
+  );
+
+  return {
+    allParticipants: employees,
+    assignedParticipants,
+    assignments: weekAssignments,
+    availableParticipants: employees.filter(
+      (participant) => !assignedParticipants.includes(participant),
+    ),
+    selectedDate,
+    weekDates,
+    weekKey,
+  };
+}
