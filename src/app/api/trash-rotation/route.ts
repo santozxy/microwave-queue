@@ -19,9 +19,10 @@ export async function GET(request: NextRequest) {
     const snapshot = await getTrashWeekSnapshot(selectedDate);
     return NextResponse.json(snapshot);
   } catch (error) {
+    const status = error instanceof TrashRotationError ? error.status : 400;
     const message =
       error instanceof Error ? error.message : "Não foi possível carregar a semana.";
-    return NextResponse.json({ message }, { status: 400 });
+    return NextResponse.json({ message }, { status });
   }
 }
 
