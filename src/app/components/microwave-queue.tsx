@@ -1,6 +1,16 @@
 "use client";
 
-import { useState, useRef } from "react";
+import {
+  ArrowLeftRight,
+  Check,
+  Clock,
+  GripVertical,
+  Shuffle,
+  Trash2,
+  Users,
+} from "lucide-react";
+import { useRef, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -19,32 +29,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Shuffle,
-  Users,
-  Clock,
-  Check,
-  GripVertical,
-  ArrowLeftRight,
-} from "lucide-react";
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { employees } from "@/lib/employees";
 
-const employees = [
-  "Catatau",
-  "Mão de obra quase barata",
-  "É o Jeff",
-  "Fabão",
-  "Negão",
-  "Pacote Office 365",
-  "QA Cachaça",
-  "Webson Siacalme",
-  "Raman",
-  "Juno Severino",
-  "Cláudia",
-  "Feijão",
-  "Matheus Escobar",
-  "Alysson",
-  "Sereio",
-  "Fabinha",
-];
+import { TrashRotation } from "./trash-rotation";
 
 interface QueueItem {
   name: string;
@@ -56,7 +48,7 @@ interface SwapConfirm {
   toIndex: number;
 }
 
-export function MicrowaveQueue() {
+function MicrowaveQueueModule() {
   const [selectedPeople, setSelectedPeople] = useState<string[]>([]);
   const [queueOrder, setQueueOrder] = useState<QueueItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -66,20 +58,26 @@ export function MicrowaveQueue() {
   const dragIndexRef = useRef<number | null>(null);
 
   const handlePersonToggle = (person: string) => {
-    setSelectedPeople((prev) =>
-      prev.includes(person)
-        ? prev.filter((p) => p !== person)
-        : [...prev, person],
+    setSelectedPeople((currentSelection) =>
+      currentSelection.includes(person)
+        ? currentSelection.filter((item) => item !== person)
+        : [...currentSelection, person],
     );
     setQueueOrder([]);
   };
 
   const generateRandomOrder = async () => {
-    if (selectedPeople.length === 0) return;
+    if (selectedPeople.length === 0) {
+      return;
+    }
+
     setIsGenerating(true);
     await new Promise((resolve) => setTimeout(resolve, 800));
+
     const shuffled = [...selectedPeople].sort(() => Math.random() - 0.5);
-    setQueueOrder(shuffled.map((name) => ({ name, previousPosition: null })));
+    setQueueOrder(
+      shuffled.map((name) => ({ name, previousPosition: null })),
+    );
     setIsGenerating(false);
   };
 
@@ -93,16 +91,16 @@ export function MicrowaveQueue() {
     setQueueOrder([]);
   };
 
-  // Drag handlers
-  const handleDragStart = (e: React.DragEvent, index: number) => {
+  const handleDragStart = (event: React.DragEvent, index: number) => {
     dragIndexRef.current = index;
     setDraggingIndex(index);
-    e.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.effectAllowed = "move";
   };
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
+  const handleDragOver = (event: React.DragEvent, index: number) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+
     if (dragIndexRef.current !== index) {
       setDragOverIndex(index);
     }
@@ -112,12 +110,17 @@ export function MicrowaveQueue() {
     setDragOverIndex(null);
   };
 
-  const handleDrop = (e: React.DragEvent, toIndex: number) => {
-    e.preventDefault();
+  const handleDrop = (event: React.DragEvent, toIndex: number) => {
+    event.preventDefault();
     const fromIndex = dragIndexRef.current;
+
     setDragOverIndex(null);
     setDraggingIndex(null);
-    if (fromIndex === null || fromIndex === toIndex) return;
+
+    if (fromIndex === null || fromIndex === toIndex) {
+      return;
+    }
+
     setSwapConfirm({ fromIndex, toIndex });
     dragIndexRef.current = null;
   };
@@ -129,19 +132,29 @@ export function MicrowaveQueue() {
   };
 
   const confirmSwap = () => {
-    if (!swapConfirm) return;
+    if (!swapConfirm) {
+      return;
+    }
+
     const { fromIndex, toIndex } = swapConfirm;
-    setQueueOrder((prev) => {
-      const updated = [...prev];
+
+    setQueueOrder((currentQueue) => {
+      const updatedQueue = [...currentQueue];
       const fromItem = {
-        ...updated[fromIndex],
+        ...updatedQueue[fromIndex],
         previousPosition: fromIndex + 1,
       };
-      const toItem = { ...updated[toIndex], previousPosition: toIndex + 1 };
-      updated[fromIndex] = toItem;
-      updated[toIndex] = fromItem;
-      return updated;
+      const toItem = {
+        ...updatedQueue[toIndex],
+        previousPosition: toIndex + 1,
+      };
+
+      updatedQueue[fromIndex] = toItem;
+      updatedQueue[toIndex] = fromItem;
+
+      return updatedQueue;
     });
+
     setSwapConfirm(null);
   };
 
@@ -156,213 +169,192 @@ export function MicrowaveQueue() {
     swapConfirm !== null ? queueOrder[swapConfirm.toIndex]?.name : "";
 
   return (
-    <div className="h-screen bg-background p-4 flex flex-col overflow-hidden">
-      <div className="max-w-6xl mx-auto flex flex-col h-full w-full">
-        <div className="text-center mb-6 shrink-0">
-          <h1 className="text-3xl font-bold text-foreground flex items-center justify-center gap-2">
-            <Clock className="h-7 w-7 text-primary" />
-            Fila do Microondas
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Selecione quem vai participar e gere a ordem aleatória
-          </p>
-        </div>
-
-        <div className="flex-1 flex gap-6 min-h-0 w-full">
-          {/* Participantes */}
-          <div className="w-1/2 shrink-0">
-            <Card className="h-full flex flex-col bg-card border-border">
-              <CardHeader className="pb-2 shrink-0">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-xl text-card-foreground">
-                      Participantes
-                    </CardTitle>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={selectAll}>
-                      Todos
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={clearAll}>
-                      Limpar
-                    </Button>
-                  </div>
+    <>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card className="min-h-136 border-border bg-card">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-xl">Participantes</CardTitle>
                 </div>
                 <CardDescription>
                   {selectedPeople.length} de {employees.length} selecionados
                 </CardDescription>
-              </CardHeader>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={selectAll}>
+                  Todos
+                </Button>
+                <Button variant="outline" size="sm" onClick={clearAll}>
+                  Limpar
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
 
-              <CardContent className="flex-1 pt-0 overflow-y-auto">
-                <div className="grid grid-cols-2 gap-2">
-                  {employees.map((person) => {
-                    const isSelected = selectedPeople.includes(person);
-                    return (
-                      <button
-                        key={person}
-                        onClick={() => handlePersonToggle(person)}
-                        className={`
-                          relative p-3 rounded-lg border-2 transition-all duration-200 text-left cursor-pointer
-                          ${
-                            isSelected
-                              ? "border-primary bg-primary/10 text-primary shadow-sm"
-                              : "border-border bg-card hover:border-primary/50 hover:bg-accent text-card-foreground"
-                          }
-                        `}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold truncate pr-2">
-                            {person}
-                          </span>
-                          {isSelected && (
-                            <Check className="h-4 w-4 text-primary shrink" />
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-              <CardFooter className="pt-4 shrink">
-                <div className="w-full space-y-3">
-                  <Button
-                    onClick={generateRandomOrder}
-                    disabled={selectedPeople.length === 0 || isGenerating}
-                    size="lg"
-                    className="w-full"
+          <CardContent className="space-y-4">
+            <div className="grid gap-2 sm:grid-cols-2">
+              {employees.map((person) => {
+                const isSelected = selectedPeople.includes(person);
+
+                return (
+                  <button
+                    key={person}
+                    type="button"
+                    onClick={() => handlePersonToggle(person)}
+                    className={[
+                      "rounded-lg border-2 p-3 text-left transition-all",
+                      isSelected
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-border bg-card hover:border-primary/50 hover:bg-accent text-card-foreground",
+                    ].join(" ")}
                   >
-                    <Shuffle
-                      className={`h-5 w-5 mr-2 ${isGenerating ? "animate-spin" : ""}`}
-                    />
-                    {isGenerating ? "Gerando..." : "Gerar Ordem Aleatória"}
-                  </Button>
-                  {selectedPeople.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      Selecione pelo menos uma pessoa para gerar a fila
-                    </p>
-                  )}
-                </div>
-              </CardFooter>
-            </Card>
-          </div>
+                    <div className="flex items-center justify-between">
+                      <span className="truncate pr-2 text-sm font-semibold">
+                        {person}
+                      </span>
+                      {isSelected && (
+                        <Check className="h-4 w-4 shrink-0 text-primary" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
 
-          {/* Fila */}
-          <div className="w-1/2 shrink">
-            <Card className="h-full border-primary/20 bg-primary/5 flex flex-col">
-              <CardHeader className="pb-2 shrink">
-                <CardTitle className="text-primary text-xl flex items-center gap-2">
-                  🎯 Ordem da Fila
-                </CardTitle>
-                <CardDescription className="text-muted-foreground">
-                  {queueOrder.length > 0
-                    ? `Do primeiro ao último • ${queueOrder.length} pessoas • Arraste para trocar posições`
-                    : "A fila aparecerá aqui após gerar a ordem"}
-                </CardDescription>
-              </CardHeader>
+          <CardFooter>
+            <div className="w-full space-y-3">
+              <Button
+                onClick={generateRandomOrder}
+                disabled={selectedPeople.length === 0 || isGenerating}
+                size="lg"
+                className="w-full"
+              >
+                <Shuffle
+                  className={`mr-2 h-5 w-5 ${isGenerating ? "animate-spin" : ""}`}
+                />
+                {isGenerating ? "Gerando..." : "Gerar ordem aleatória"}
+              </Button>
 
-              <CardContent className="pt-0 flex-1 min-h-0 flex flex-col overflow-hidden">
-                {queueOrder.length > 0 ? (
-                  <div className="flex-1 overflow-y-auto pr-1">
-                    <div className="grid grid-cols-2 gap-2">
-                      {queueOrder.map((item, index) => (
-                        <div
-                          key={item.name}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, index)}
-                          onDragOver={(e) => handleDragOver(e, index)}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, index)}
-                          onDragEnd={handleDragEnd}
-                          className={`
-                            flex items-center justify-between p-3 rounded-lg border-2 transition-all cursor-grab active:cursor-grabbing select-none
-                            ${index === 0 ? "col-span-2" : ""}
-                            ${
-                              draggingIndex === index
-                                ? "opacity-40 scale-95"
-                                : dragOverIndex === index
-                                  ? "border-primary bg-primary/20 scale-105 shadow-lg"
-                                  : index === 0
-                                    ? "bg-primary/10 border-primary shadow-sm"
-                                    : "bg-card border-border hover:border-primary/40"
-                            }
-                          `}
+              {selectedPeople.length === 0 && (
+                <p className="text-center text-xs text-muted-foreground">
+                  Selecione pelo menos uma pessoa para gerar a fila
+                </p>
+              )}
+            </div>
+          </CardFooter>
+        </Card>
+
+        <Card className="min-h-136 border-primary/20 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-xl text-primary">
+              <Clock className="h-5 w-5" />
+              Ordem da fila
+            </CardTitle>
+            <CardDescription>
+              {queueOrder.length > 0
+                ? `Do primeiro ao último • ${queueOrder.length} pessoas • Arraste para trocar posições`
+                : "A fila aparecerá aqui após gerar a ordem"}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent>
+            {queueOrder.length > 0 ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {queueOrder.map((item, index) => (
+                  <div
+                    key={item.name}
+                    draggable
+                    onDragStart={(event) => handleDragStart(event, index)}
+                    onDragOver={(event) => handleDragOver(event, index)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(event) => handleDrop(event, index)}
+                    onDragEnd={handleDragEnd}
+                    className={[
+                      "flex items-center justify-between rounded-lg border-2 p-3 transition-all select-none",
+                      "cursor-grab active:cursor-grabbing",
+                      index === 0 ? "sm:col-span-2" : "",
+                      draggingIndex === index
+                        ? "scale-95 opacity-40"
+                        : dragOverIndex === index
+                          ? "scale-105 border-primary bg-primary/20 shadow-lg"
+                          : index === 0
+                            ? "border-primary bg-primary/10 shadow-sm"
+                            : "border-border bg-card hover:border-primary/40",
+                    ].join(" ")}
+                  >
+                    <div className="flex min-w-0 flex-1 items-center gap-2">
+                      <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div
+                        className={[
+                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                          index === 0
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground",
+                        ].join(" ")}
+                      >
+                        {index + 1}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span
+                          className={[
+                            "block truncate text-sm font-semibold",
+                            index === 0 ? "text-primary" : "text-card-foreground",
+                          ].join(" ")}
                         >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <div
-                              className={`
-                              flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0
-                              ${
-                                index === 0
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted text-muted-foreground"
-                              }
-                            `}
-                            >
-                              {index + 1}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <span
-                                className={`font-semibold text-sm truncate block ${
-                                  index === 0
-                                    ? "text-primary"
-                                    : "text-card-foreground"
-                                }`}
-                              >
-                                {item.name}
-                              </span>
-                              {item.previousPosition !== null && (
-                                <span className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                  <ArrowLeftRight className="h-3 w-3" />
-                                  Antes: {item.previousPosition}º
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          {index === 0 && (
-                            <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full font-medium shrink-0 ml-2">
-                              Próximo
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex-1 flex items-center justify-center">
-                    <div className="text-center space-y-3">
-                      <div className="w-16 h-16 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
-                        <Clock className="h-8 w-8 text-primary/60" />
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground font-medium">
-                          Nenhuma fila gerada ainda
-                        </p>
-                        <p className="text-sm text-muted-foreground/80 mt-1">
-                          Selecione os participantes e clique em &quot;Gerar
-                          Ordem Aleatória&quot;
-                        </p>
+                          {item.name}
+                        </span>
+                        {item.previousPosition !== null && (
+                          <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                            <ArrowLeftRight className="h-3 w-3" />
+                            Antes: {item.previousPosition}º
+                          </span>
+                        )}
                       </div>
                     </div>
+
+                    {index === 0 && (
+                      <span className="ml-2 shrink-0 rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+                        Próximo
+                      </span>
+                    )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex min-h-96 items-center justify-center">
+                <div className="space-y-3 text-center">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                    <Clock className="h-8 w-8 text-primary/60" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-muted-foreground">
+                      Nenhuma fila gerada ainda
+                    </p>
+                    <p className="mt-1 text-sm text-muted-foreground/80">
+                      Selecione os participantes e clique em &quot;Gerar ordem
+                      aleatória&quot;
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Dialog de confirmação de troca */}
       <Dialog
         open={swapConfirm !== null}
-        onOpenChange={(open) => !open && cancelSwap()}
+        onOpenChange={(isOpen) => !isOpen && cancelSwap()}
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ArrowLeftRight className="h-5 w-5 text-primary" />
-              Confirmar Troca de Posição
+              Confirmar troca de posição
             </DialogTitle>
             <DialogDescription className="pt-2">
               Você deseja realmente trocar as posições de{" "}
@@ -382,35 +374,84 @@ export function MicrowaveQueue() {
           {swapConfirm !== null && (
             <div className="flex items-center justify-center gap-4 py-2">
               <div className="text-center">
-                <div className="w-10 h-10 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center font-bold text-primary text-sm mx-auto mb-1">
+                <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary bg-primary/10 text-sm font-bold text-primary">
                   {swapConfirm.fromIndex + 1}
                 </div>
-                <p className="text-sm font-medium text-foreground max-w-25 text-center line-clamp-2">
+                <p className="max-w-25 line-clamp-2 text-center text-sm font-medium text-foreground">
                   {swapFromName}
                 </p>
               </div>
-              <ArrowLeftRight className="h-6 w-6 text-muted-foreground shrink-0" />
+
+              <ArrowLeftRight className="h-6 w-6 shrink-0 text-muted-foreground" />
+
               <div className="text-center">
-                <div className="w-10 h-10 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center font-bold text-primary text-sm mx-auto mb-1">
+                <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary bg-primary/10 text-sm font-bold text-primary">
                   {swapConfirm.toIndex + 1}
                 </div>
-                <p className="text-sm font-medium text-foreground max-w-25 text-center line-clamp-2">
+                <p className="max-w-25 line-clamp-2 text-center text-sm font-medium text-foreground">
                   {swapToName}
                 </p>
               </div>
             </div>
           )}
-          <DialogFooter className="gap-2 flex flex-row">
+
+          <DialogFooter className="flex flex-row gap-2">
             <Button variant="outline" onClick={cancelSwap}>
               Cancelar
             </Button>
             <Button onClick={confirmSwap}>
-              <ArrowLeftRight className="h-4 w-4 mr-2" />
-              Confirmar Troca
+              <ArrowLeftRight className="mr-2 h-4 w-4" />
+              Confirmar troca
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+}
+
+export function MicrowaveQueue() {
+  return (
+    <div className="min-h-screen bg-background p-4 md:p-6">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        <div className="text-center">
+          <h1 className="flex items-center justify-center gap-2 text-3xl font-bold text-foreground">
+            <Clock className="h-7 w-7 text-primary" />
+            Escalas do escritório
+          </h1>
+          <p className="mt-2 text-muted-foreground">
+            Organize a fila do micro-ondas e o rodízio diário do lixo no mesmo
+            lugar.
+          </p>
+        </div>
+
+        <Tabs defaultValue="microwave" className="gap-4">
+          <TabsList className="h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
+            <TabsTrigger
+              value="microwave"
+              className="h-10 border border-border bg-card px-4 data-[state=active]:border-primary data-[state=active]:text-primary"
+            >
+              <Clock className="h-4 w-4" />
+              Fila do micro-ondas
+            </TabsTrigger>
+            <TabsTrigger
+              value="trash"
+              className="h-10 border border-border bg-card px-4 data-[state=active]:border-primary data-[state=active]:text-primary"
+            >
+              <Trash2 className="h-4 w-4" />
+              Rodízio do lixo
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="microwave">
+            <MicrowaveQueueModule />
+          </TabsContent>
+
+          <TabsContent value="trash">
+            <TrashRotation />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
