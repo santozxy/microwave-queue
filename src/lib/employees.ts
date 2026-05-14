@@ -9,7 +9,7 @@ export const employees = [
   "Webson Siacalme",
   "Raman",
   "Juno Severino",
-  "Auricélia",
+  "Cláudia",
   "FormiguinhaZ",
   "Matheus Escobar",
   "Sereio"

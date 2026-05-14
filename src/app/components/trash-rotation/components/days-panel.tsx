@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { type TrashAssignment } from "@/domains/trash-rotation/types";
 
 interface DayItem {
@@ -99,7 +100,41 @@ export function DaysPanel({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {weekLoaded ? (
+        {isLoading ? (
+          <>
+            <ScrollArea className="w-full whitespace-nowrap pb-3">
+              <div className="flex min-w-max gap-3">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="min-h-28 w-32 shrink-0 rounded-2xl border border-border bg-card p-3"
+                  >
+                    <div className="flex h-full flex-col justify-between">
+                      <div className="space-y-2">
+                        <Skeleton className="h-3 w-12" />
+                        <Skeleton className="h-6 w-16" />
+                      </div>
+                      <div className="space-y-2">
+                        <Skeleton className="h-3 w-20" />
+                        <Skeleton className="h-5 w-12 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
+
+            <div className="rounded-xl border border-border bg-card/70 px-4 py-3 shadow-sm">
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-9 w-36" />
+              </div>
+            </div>
+          </>
+        ) : weekLoaded ? (
           <>
             <ScrollArea className="w-full whitespace-nowrap pb-3">
               <div className="flex min-w-max gap-3">
