@@ -7,7 +7,7 @@ export const employees = [
   "Pacote Office 365",
   "QA Cachaça",
   "Webson Siacalme",
-  "Raman",
+  "Momom",
   "Juno Severino",
   "Cláudia",
   "FormiguinhaZ",
