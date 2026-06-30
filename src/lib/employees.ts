@@ -12,6 +12,5 @@ export const employees = [
   "Cláudia",
   "FormiguinhaZ",
   "Matheus Escobar",
-  "Sereio",
-  "Ramon Branco"
+  "Sereio"
 ];
