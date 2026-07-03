@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmployeeAvatar } from "@/app/components/employee-avatar";
 import { type TrashAssignment } from "@/domains/trash-rotation/types";
 
 interface DayItem {
@@ -181,6 +182,17 @@ export function DaysPanel({
                         >
                           {day.assignee ?? "Disponível"}
                         </p>
+                        {day.assignee && (
+                          <EmployeeAvatar
+                            name={day.assignee}
+                            className={[
+                              "size-7",
+                              day.isSelected
+                                ? "border-primary-foreground/40"
+                                : "border-primary/30",
+                            ].join(" ")}
+                          />
+                        )}
                         {day.isSelected && (
                           <span className="shrink-0 rounded-full bg-primary-foreground/15 px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
                             Dia
@@ -197,7 +209,12 @@ export function DaysPanel({
             {currentAssignment ? (
               <div className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 shadow-sm">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <EmployeeAvatar
+                      name={currentAssignment.assignee}
+                      className="border-primary/40"
+                    />
+                    <div className="min-w-0">
                     <p className="text-sm font-medium text-primary">
                       Responsável do dia
                     </p>
@@ -207,6 +224,7 @@ export function DaysPanel({
                       </span>{" "}
                       ficou responsável pelo lixo em {days.find((day) => day.isSelected)?.fullLabel}.
                     </p>
+                    </div>
                   </div>
                   <Button
                     variant="outline"

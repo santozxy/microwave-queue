@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmployeeAvatar } from "@/app/components/employee-avatar";
 import { employees } from "@/lib/employees";
 
 interface ParticipantsPanelProps {
@@ -104,17 +105,23 @@ export function ParticipantsPanel({
                 ].join(" ")}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <span className="block truncate text-sm font-semibold">
-                      {person}
-                    </span>
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      {assigned
-                        ? "Indisponível nesta semana"
-                        : selected
-                          ? "Selecionado para o sorteio"
-                          : "Disponível para participar"}
-                    </span>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <EmployeeAvatar
+                      name={person}
+                      className={selected ? "border-primary/40" : ""}
+                    />
+                    <div className="min-w-0">
+                      <span className="block truncate text-sm font-semibold">
+                        {person}
+                      </span>
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {assigned
+                          ? "Indisponível nesta semana"
+                          : selected
+                            ? "Selecionado para o sorteio"
+                            : "Disponível para participar"}
+                      </span>
+                    </div>
                   </div>
                   {assigned ? (
                     <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide">

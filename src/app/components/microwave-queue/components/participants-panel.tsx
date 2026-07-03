@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmployeeAvatar } from "@/app/components/employee-avatar";
 import { employees } from "@/lib/employees";
 
 interface ParticipantsPanelProps {
@@ -71,10 +72,16 @@ export function ParticipantsPanel({
                     : "border-border bg-card hover:border-primary/50 hover:bg-accent text-card-foreground",
                 ].join(" ")}
               >
-                <div className="flex items-center justify-between">
-                  <span className="truncate pr-2 text-sm font-semibold">
-                    {person}
-                  </span>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <EmployeeAvatar
+                      name={person}
+                      className={isSelected ? "border-primary/40" : ""}
+                    />
+                    <span className="truncate text-sm font-semibold">
+                      {person}
+                    </span>
+                  </div>
                   {isSelected && (
                     <Check className="h-4 w-4 shrink-0 text-primary" />
                   )}

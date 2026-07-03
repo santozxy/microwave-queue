@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmployeeAvatar } from "@/app/components/employee-avatar";
 
 import { type QueueItem } from "./types";
 
@@ -84,6 +85,10 @@ export function OrderPanel({
                   >
                     {index + 1}
                   </div>
+                  <EmployeeAvatar
+                    name={item.name}
+                    className={index === 0 ? "border-primary/40" : ""}
+                  />
                   <div className="min-w-0 flex-1">
                     <span
                       className={[
