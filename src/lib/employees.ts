@@ -26,7 +26,7 @@ export const employeeProfiles: Employee[] = [
   },
   {
     name: "Pacote Office 365 🏳️‍🌈",
-    photo: "/assets/integrantes/pacote-office-365.jpeg",
+    photo: "/assets/integrantes/pacote-office-365.png",
   },
   {
     name: "QA Cachaça 🥃",
