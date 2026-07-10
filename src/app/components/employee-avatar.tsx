@@ -13,7 +13,7 @@ export function EmployeeAvatar({ className, name }: EmployeeAvatarProps) {
   const profile = getEmployeeProfile(name);
 
   return (
-    <Avatar className={cn("size-15 border border-border bg-muted", className)}>
+    <Avatar className={cn("size-20 border border-border bg-muted", className)}>
       {profile?.photo && (
         <AvatarImage
           alt={`Foto de ${name}`}

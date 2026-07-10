@@ -18,7 +18,7 @@ export const employeeProfiles: Employee[] = [
   },
   {
     name: "Fabão",
-    photo: "/assets/integrantes/fabao.jpeg",
+    photo: "/assets/integrantes/fabao.png",
   },
   {
     name: "Negão 🏳️‍🌈",
@@ -46,7 +46,7 @@ export const employeeProfiles: Employee[] = [
   },
   {
     name: "Cláudia",
-    photo: "/assets/integrantes/claudia.jpeg",
+    photo: "/assets/integrantes/claudia.png",
   },
   {
     name: "Glória 🙏",
@@ -54,11 +54,11 @@ export const employeeProfiles: Employee[] = [
   },
   {
     name: "Matheus Escobar 🚬",
-    photo: "/assets/integrantes/matheus-escobar.jpeg",
+    photo: "/assets/integrantes/matheus-escobar.png",
   },
   {
     name: "Sereio 🧜🏻‍♂️",
-    photo: "/assets/integrantes/sereio.jpeg",
+    photo: "/assets/integrantes/sereio.png",
   },
 ];
 
