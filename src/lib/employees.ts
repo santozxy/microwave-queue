@@ -10,7 +10,7 @@ export const employeeProfiles: Employee[] = [
   },
   {
     name: "Mão de obra quase barata",
-    photo: "/assets/integrantes/mao-de-obra-quase-barata.jpeg",
+    photo: "/assets/integrantes/mao-de-obra-quase-barata.png",
   },
   {
     name: "É o Jeff",
